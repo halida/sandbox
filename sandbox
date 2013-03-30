@@ -1,0 +1,50 @@
+#!/Users/halida/.rvm/bin/ruby
+
+require 'json'
+require 'tempfile'
+
+def get_data
+  filename = ARGV[0]
+  data = JSON.load File.read(filename)
+end
+
+def create_temp_file code=""
+  file = Tempfile.new('foo')
+  file.write(code)
+  file.close
+  file.path
+end
+
+def process
+  data = get_data
+
+  source_filename = create_temp_file(data['code'])
+  input_filename = create_temp_file data['input']
+  output_filename = create_temp_file
+
+  case data['language'].downcase
+  when 'python'
+    cmd = "python #{source_filename} < #{input_filename} > #{output_filename}"
+  when 'c'
+    cmd = "cc #{source_filename} < #{input_filename} > #{output_filename}"
+  when 'ruby'
+    cmd = "ruby #{source_filename} < #{input_filename} > #{output_filename}"
+  else
+    raise "language not exists: #{data['language']}"
+  end
+
+  error = `#{cmd}`
+
+  output = File.read(output_filename)
+
+  if output.strip == data['output']
+    result = 'accepted'
+  else
+    result = 'failed'
+  end
+
+  result = {result: result, output: output, error: error}
+  puts result.to_json
+end
+
+process
