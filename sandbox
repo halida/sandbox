@@ -1,7 +1,19 @@
 #!/Users/halida/.rvm/bin/ruby
 
+SANDBOX = false
+
 require 'json'
 require 'tempfile'
+
+def sandbox_run cmd
+  require 'rubypython'
+  RubyPython.start
+  RubyPython.import("sandbox")
+
+  s = sandbox.Sandbox(cmd)
+  s.run()
+  s.probe().rubify
+end
 
 def get_data
   filename = ARGV[0]
@@ -33,7 +45,11 @@ def process
     raise "language not exists: #{data['language']}"
   end
 
-  error = `#{cmd}`
+  if SANDBOX
+    error = sandbox_run cmd
+  else
+    error = `#{cmd}`
+  end
 
   output = File.read(output_filename)
 
